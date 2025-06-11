@@ -33,13 +33,15 @@ import com.rafi607062330092.assesment3.R
 import com.rafi607062330092.assesment3.ui.theme.Mobpro1Theme
 
 @Composable
-fun HewanDialog(
+fun BukuDialog(
     bitmap: Bitmap?,
     onDismissRequest: () -> Unit,
-    onConfirmation: (String, String) -> Unit
+    onConfirmation: (String, String, String) -> Unit
 ) {
-    var nama by remember { mutableStateOf("") }
-    var namaLatin by remember { mutableStateOf("") }
+    var judul by remember { mutableStateOf("") }
+    var penulis by remember { mutableStateOf("") }
+    var penerbit by remember { mutableStateOf("") }
+
     Dialog(
         onDismissRequest = {
             onDismissRequest()
@@ -59,9 +61,9 @@ fun HewanDialog(
                     modifier = Modifier.fillMaxWidth().aspectRatio(1f)
                 )
                 OutlinedTextField(
-                    value = nama,
+                    value = judul,
                     onValueChange = {
-                        nama = it
+                        judul = it
                     },
                     label = {
                         Text(
@@ -76,9 +78,26 @@ fun HewanDialog(
                     modifier = Modifier.padding(top = 8.dp)
                 )
                 OutlinedTextField(
-                    value = namaLatin,
+                    value = penulis,
                     onValueChange = {
-                        namaLatin = it
+                        penulis = it
+                    },
+                    label = {
+                        Text(
+                            text = stringResource(id = R.string.nama_latin)
+                        )
+                    },
+                    maxLines = 1,
+                    keyboardOptions = KeyboardOptions(
+                        capitalization = KeyboardCapitalization.Sentences,
+                        imeAction = ImeAction.Done
+                    ),
+                    modifier = Modifier.padding(top = 8.dp)
+                )
+                OutlinedTextField(
+                    value = penerbit,
+                    onValueChange = {
+                        penerbit = it
                     },
                     label = {
                         Text(
@@ -108,9 +127,9 @@ fun HewanDialog(
                     }
                     OutlinedButton(
                         onClick = {
-                            onConfirmation(nama, namaLatin)
+                            onConfirmation(judul, penulis, penerbit)
                         },
-                        enabled = nama.isNotEmpty() && namaLatin.isNotEmpty(),
+                        enabled = judul.isNotEmpty() && penulis.isNotEmpty() && penerbit.isNotEmpty(),
                         modifier = Modifier.padding(8.dp)
                     ) {
                         Text(
@@ -128,10 +147,10 @@ fun HewanDialog(
 @Composable
 fun AddDialogPreview() {
     Mobpro1Theme {
-        HewanDialog(
+        BukuDialog (
             bitmap = null,
             onDismissRequest = {},
-            onConfirmation = { _,_ ->}
+            onConfirmation = { _,_,_ ->}
         )
     }
 }
