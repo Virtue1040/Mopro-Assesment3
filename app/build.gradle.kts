@@ -7,11 +7,11 @@ plugins {
 }
 
 android {
-    namespace = "com.rafi0092.mobpro1"
+    namespace = "com.rafi607062330092.assesment3"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.rafi0092.mobpro1"
+        applicationId = "com.rafi607062330092.assesment3"
         minSdk = 23
         targetSdk = 35
         versionCode = 1
@@ -71,6 +71,7 @@ dependencies {
     implementation(libs.googleid)
     implementation(libs.androidx.datastore.preferences)
     implementation(libs.android.image.cropper)
+    implementation(libs.logging.interceptor.v4120)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
