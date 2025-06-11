@@ -40,6 +40,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -95,15 +96,15 @@ fun MainScreen() {
     val errorMessage by viewModel.errorMessage
 
     var showDialog by remember { mutableStateOf(false) }
-    var showHewanDialog by remember { mutableStateOf(false) }
+    var showBukuDialog by remember { mutableStateOf(false) }
     var showHapusDialog by remember { mutableStateOf(false) }
-    var hapusID by remember { mutableStateOf(0L) }
+    var hapusID by remember { mutableLongStateOf(0L) }
 
     var bitmap: Bitmap? by remember { mutableStateOf(null) }
     val launcher = rememberLauncherForActivityResult(CropImageContract()) {
         bitmap = getCroppedImage(context.contentResolver, it)
         if (bitmap != null) {
-            showHewanDialog = true
+            showBukuDialog = true
         }
     }
 
@@ -126,9 +127,9 @@ fun MainScreen() {
                     actions = {
                         IconButton(
                             onClick = {
-                                if (user.email.isEmpty()) {
+                                if (user.token.isEmpty()) {
                                     CoroutineScope(Dispatchers.IO).launch {
-                                        signIn(context, dataStore)
+                                        signIn(viewModel, context, dataStore)
                                     }
                                 } else {
                                     showDialog = true
@@ -164,7 +165,7 @@ fun MainScreen() {
                 }
             }
         ) { innerPadding ->
-            ScreenContent(viewModel, user.email,
+            ScreenContent(viewModel, user.token,
                 {
                     id ->
                     hapusID = id
@@ -182,14 +183,14 @@ fun MainScreen() {
                 }
             }
 
-            if (showHewanDialog) {
-                HewanDialog(
+            if (showBukuDialog) {
+                BukuDialog(
                     bitmap = bitmap,
-                    onDismissRequest = { showHewanDialog = false }
+                    onDismissRequest = { showBukuDialog = false }
                 ) {
-                    nama, namaLatin ->
-                    showHewanDialog = false
-                    viewModel.saveData(user.email, nama, namaLatin, bitmap!!)
+                    judul, penulis, penerbit ->
+                    showBukuDialog = false
+                    viewModel.saveData(user.token, judul, penulis, penerbit, bitmap!!)
                 }
             }
 
@@ -197,7 +198,7 @@ fun MainScreen() {
                 HapusDialog(
                     onDismissRequest = { showHapusDialog = false }
                 ) {
-                    viewModel.deleteData(user.email, hapusID)
+                    viewModel.deleteData(user.token, hapusID)
                     Toast.makeText(context, context.getString(R.string.terhapus), Toast.LENGTH_LONG).show()
                     showHapusDialog = false
                 }
@@ -212,12 +213,12 @@ fun MainScreen() {
 }
 
 @Composable
-fun ScreenContent(viewModel: MainViewModel, userId: String, onHapus: (id: Long) -> Unit, modifier: Modifier = Modifier) {
+fun ScreenContent(viewModel: MainViewModel, token: String, onHapus: (id: Long) -> Unit, modifier: Modifier = Modifier) {
     val data by viewModel.data
     val status by viewModel.status.collectAsState()
 
-    LaunchedEffect(userId) {
-        viewModel.retrieveData(userId)
+    LaunchedEffect(token) {
+        viewModel.retrieveData(token)
     }
 
     when (status) {
@@ -236,8 +237,10 @@ fun ScreenContent(viewModel: MainViewModel, userId: String, onHapus: (id: Long) 
                     columns = GridCells.Fixed(2),
                     contentPadding = PaddingValues(bottom = 80.dp)
                 ) {
-                    items(data) {
-                        ListItem(buku = it, onHapus)
+                    data?.let { it ->
+                        items(it.data) {
+                            ListItem(buku = it, onHapus)
+                        }
                     }
                 }
         }
@@ -252,7 +255,7 @@ fun ScreenContent(viewModel: MainViewModel, userId: String, onHapus: (id: Long) 
                     text = stringResource(id = R.string.error),
                 )
                 Button(
-                    onClick = { viewModel.retrieveData(userId) },
+                    onClick = { viewModel.retrieveData(token) },
                     modifier = Modifier.padding(top = 16.dp),
                     contentPadding = PaddingValues(horizontal = 32.dp, vertical = 16.dp)
                 ) {
@@ -265,14 +268,6 @@ fun ScreenContent(viewModel: MainViewModel, userId: String, onHapus: (id: Long) 
 
 @Composable
 fun ListItem(buku: Buku, onHapus: (id : Long) -> Unit) {
-    var imageUrl by remember { mutableStateOf("") }
-
-    LaunchedEffect(buku.id_buku) {
-        val get = BukuApi.service.getImageUrl(buku.id_buku).data
-        if (get != null) {
-            imageUrl = get
-        }
-    }
     Box(
         modifier = Modifier.padding(4.dp).border(1.dp, Color.Gray),
         contentAlignment = Alignment.BottomCenter
@@ -280,7 +275,7 @@ fun ListItem(buku: Buku, onHapus: (id : Long) -> Unit) {
         AsyncImage(
             model = ImageRequest.Builder(LocalContext.current)
                 .data(
-                    imageUrl
+                    BukuApi.getImageUrl(buku.id_buku)
                 )
                 .crossfade(true)
                 .build(),
@@ -325,7 +320,7 @@ fun ListItem(buku: Buku, onHapus: (id : Long) -> Unit) {
     }
 }
 
-private suspend fun signIn(context: Context, dataStore: UserDataStore) {
+private suspend fun signIn(viewModel: MainViewModel, context: Context, dataStore: UserDataStore) {
     val googleIdOption : GetGoogleIdOption = GetGoogleIdOption.Builder()
         .setFilterByAuthorizedAccounts(false)
         .setServerClientId(BuildConfig.API_KEY)
@@ -338,13 +333,14 @@ private suspend fun signIn(context: Context, dataStore: UserDataStore) {
     try {
         val credentialManager = CredentialManager.create(context)
         val result = credentialManager.getCredential(context, request)
-        handleSignIn(result, dataStore)
+        handleSignIn(viewModel, result, dataStore)
     } catch (e: GetCredentialException) {
         Log.e("SIGN-IN", "Error: ${e.errorMessage}")
     }
 }
 
 private suspend fun handleSignIn(
+    viewModel: MainViewModel,
     result: GetCredentialResponse,
     dataStore: UserDataStore
 ) {
@@ -356,7 +352,25 @@ private suspend fun handleSignIn(
             val nama = googleId.displayName ?: ""
             val email = googleId.id
             val photoUrl = googleId.profilePictureUri.toString()
-            dataStore.saveData(User(nama, email, photoUrl))
+            val token = googleId.idToken
+            if (token.isNotEmpty()) {
+                val tokenSanctum = viewModel.register(nama, email, token)
+
+                if (tokenSanctum.isEmpty()) {
+                    Log.e("SIGN-IN", "Error: registration failed")
+                    return
+                }
+
+                dataStore.saveData(
+                    User(
+                        token = "Bearer $tokenSanctum",
+                        name = nama,
+                        email = email,
+                        photoUrl = photoUrl
+                    )
+                )
+                Log.d("SIGN-IN", "Success: $nama, $email, $photoUrl, $tokenSanctum")
+            }
         } catch (e: GoogleIdTokenParsingException) {
             Log.e("SIGN-IN", "Error: ${e.message}")
         }
