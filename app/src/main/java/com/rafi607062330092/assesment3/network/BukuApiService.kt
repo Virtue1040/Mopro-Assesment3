@@ -19,7 +19,8 @@ import retrofit2.http.Header
 import retrofit2.http.Multipart
 import retrofit2.http.POST
 import retrofit2.http.Part
-import retrofit2.http.Query
+import retrofit2.http.Path
+
 
 private const val BASE_URL = "https://rattler-intent-cricket.ngrok-free.app/api/"
 
@@ -43,7 +44,9 @@ private val retrofit = Retrofit.Builder()
 
 interface BukuApiService {
     @GET("buku")
-    suspend fun getBuku(): BukuStatus
+    suspend fun getBuku(
+        @Header("Authorization") token: String
+    ): BukuStatus
 
     @Multipart
     @POST("buku")
@@ -58,7 +61,7 @@ interface BukuApiService {
     @DELETE("buku/{id_buku}")
     suspend fun deleteBuku(
         @Header("Authorization") token: String,
-        @Query("id_buku") id_buku: Long
+        @Path("id_buku") id_buku: Long
     ): OpStatus
 
     @FormUrlEncoded
