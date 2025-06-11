@@ -81,6 +81,31 @@ class MainViewModel : ViewModel() {
         }
     }
 
+    fun updateData(token: String, id_buku: Long, judul: String, penulis: String, penerbit: String, bitmap: Bitmap?) {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val imagePart = bitmap?.toMultipartBody()
+                val result = BukuApi.service.updateBuku(
+                    token,
+                    "PUT".toRequestBody("text/plain".toMediaTypeOrNull()),
+                    id_buku,
+                    judul.toRequestBody("text/plain".toMediaTypeOrNull()),
+                    penulis.toRequestBody("text/plain".toMediaTypeOrNull()),
+                    penerbit.toRequestBody("text/plain".toMediaTypeOrNull()),
+                    imagePart
+                )
+
+                if (result.success)
+                    retrieveData(token)
+                else
+                    throw Exception(result.message)
+            } catch (e: Exception) {
+                errorMessage.value = e.message
+                Log.d("MainViewModel", "Failure: ${e.message}")
+            }
+        }
+    }
+
     fun deleteData(token: String, id: Long) {
         viewModelScope.launch(Dispatchers.IO) {
             try {
