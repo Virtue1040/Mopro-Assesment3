@@ -27,11 +27,11 @@ class MainViewModel : ViewModel() {
     var errorMessage = mutableStateOf<String?>(null)
         private set
 
-    fun retrieveData() {
+    fun retrieveData(token: String) {
         viewModelScope.launch(Dispatchers.IO) {
             status.value = ApiStatus.LOADING
             try {
-                data.value = BukuApi.service.getBuku()
+                data.value = BukuApi.service.getBuku(token)
                 status.value = ApiStatus.SUCCESS
             } catch (e: Exception) {
                 Log.e("MainViewModel", "Failure: ${e.message}")
@@ -71,7 +71,7 @@ class MainViewModel : ViewModel() {
                 )
 
                 if (result.success)
-                    retrieveData()
+                    retrieveData(token)
                 else
                     throw Exception(result.message)
             } catch (e: Exception) {
@@ -81,16 +81,16 @@ class MainViewModel : ViewModel() {
         }
     }
 
-    fun deleteData(userId: String, id: Long) {
+    fun deleteData(token: String, id: Long) {
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 val result = BukuApi.service.deleteBuku(
-                    userId,
+                    token,
                     id
                 )
 
                 if (result.success)
-                    retrieveData()
+                    retrieveData(token)
                 else
                     throw Exception(result.message)
             } catch (e: Exception) {
