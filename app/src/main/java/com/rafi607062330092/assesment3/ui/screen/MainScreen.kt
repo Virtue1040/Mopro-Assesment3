@@ -1,21 +1,17 @@
 package com.rafi607062330092.assesment3.ui.screen
 
-import android.content.ContentResolver
 import android.content.Context
-import android.graphics.Bitmap
-import android.graphics.ImageDecoder
-import android.os.Build
-import android.provider.MediaStore
 import android.util.Log
 import android.widget.Toast
-import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -66,10 +62,6 @@ import androidx.credentials.exceptions.GetCredentialException
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
-import com.canhub.cropper.CropImageContract
-import com.canhub.cropper.CropImageContractOptions
-import com.canhub.cropper.CropImageOptions
-import com.canhub.cropper.CropImageView
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import com.google.android.libraries.identity.googleid.GoogleIdTokenParsingException
@@ -99,14 +91,6 @@ fun MainScreen() {
     var showBukuDialog by remember { mutableStateOf(false) }
     var showHapusDialog by remember { mutableStateOf(false) }
     var hapusID by remember { mutableLongStateOf(0L) }
-
-    var bitmap: Bitmap? by remember { mutableStateOf(null) }
-    val launcher = rememberLauncherForActivityResult(CropImageContract()) {
-        bitmap = getCroppedImage(context.contentResolver, it)
-        if (bitmap != null) {
-            showBukuDialog = true
-        }
-    }
 
     Mobpro1Theme {
         Scaffold(
@@ -142,26 +126,32 @@ fun MainScreen() {
                                 tint = MaterialTheme.colorScheme.primary
                             )
                         }
+                        IconButton(
+                            onClick = {
+                                viewModel.retrieveData(user.token)
+                            }
+                        ) {
+                            Icon(
+                                painter = painterResource(R.drawable.baseline_refresh_24),
+                                contentDescription = stringResource(R.string.refresh),
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        }
                     }
                 )
             },
             floatingActionButton = {
-                FloatingActionButton(
-                    onClick = {
-                        val options = CropImageContractOptions(
-                            null, CropImageOptions(
-                                imageSourceIncludeGallery = false,
-                                imageSourceIncludeCamera = true,
-                                fixAspectRatio = true
-                            )
+                if (user.token.isNotEmpty()) {
+                    FloatingActionButton(
+                        onClick = {
+                            showBukuDialog = true
+                        }
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Add,
+                            contentDescription = stringResource(id = R.string.tambah_hewan)
                         )
-                        launcher.launch(options)
                     }
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Add,
-                        contentDescription = stringResource(id = R.string.tambah_hewan)
-                    )
                 }
             }
         ) { innerPadding ->
@@ -185,10 +175,9 @@ fun MainScreen() {
 
             if (showBukuDialog) {
                 BukuDialog(
-                    bitmap = bitmap,
                     onDismissRequest = { showBukuDialog = false }
                 ) {
-                    judul, penulis, penerbit ->
+                    judul, penulis, penerbit, bitmap ->
                     showBukuDialog = false
                     viewModel.saveData(user.token, judul, penulis, penerbit, bitmap!!)
                 }
@@ -216,9 +205,21 @@ fun MainScreen() {
 fun ScreenContent(viewModel: MainViewModel, token: String, onHapus: (id: Long) -> Unit, modifier: Modifier = Modifier) {
     val data by viewModel.data
     val status by viewModel.status.collectAsState()
+    var showDetailDialog by remember { mutableStateOf<Buku?>(null) }
 
     LaunchedEffect(token) {
         viewModel.retrieveData(token)
+    }
+
+    if (showDetailDialog != null) {
+        BukuDialog (
+            buku = showDetailDialog!!,
+            onDismissRequest = { showDetailDialog = null },
+            onConfirmation = { judul, penulis, penerbit, bitmap ->
+                viewModel.updateData(token, showDetailDialog!!.id_buku, judul, penulis, penerbit, bitmap)
+                showDetailDialog = null
+            }
+        )
     }
 
     when (status) {
@@ -239,7 +240,9 @@ fun ScreenContent(viewModel: MainViewModel, token: String, onHapus: (id: Long) -
                 ) {
                     data?.let { it ->
                         items(it.data) {
-                            ListItem(buku = it, onHapus)
+                            ListItem(buku = it, onHapus) {
+                                showDetailDialog = it
+                            }
                         }
                     }
                 }
@@ -267,9 +270,13 @@ fun ScreenContent(viewModel: MainViewModel, token: String, onHapus: (id: Long) -
 }
 
 @Composable
-fun ListItem(buku: Buku, onHapus: (id : Long) -> Unit) {
+fun ListItem(buku: Buku, onHapus: (id : Long) -> Unit, onClick: () -> Unit = {}) {
     Box(
-        modifier = Modifier.padding(4.dp).border(1.dp, Color.Gray),
+        modifier = Modifier.padding(4.dp).border(1.dp, Color.Gray).clickable {
+            if (buku.mine == "1") {
+                onClick()
+            }
+        },
         contentAlignment = Alignment.BottomCenter
     ) {
         AsyncImage(
@@ -283,7 +290,7 @@ fun ListItem(buku: Buku, onHapus: (id : Long) -> Unit) {
             contentScale = ContentScale.Crop,
             placeholder = painterResource(id = R.drawable.loading_img),
             error = painterResource(id = R.drawable.broken_img),
-            modifier = Modifier.fillMaxWidth().padding(4.dp)
+            modifier = Modifier.fillMaxWidth().aspectRatio(1f)
         )
         Row(
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -388,26 +395,6 @@ private suspend fun signOut(context: Context, dataStore: UserDataStore) {
         dataStore.saveData(User())
     } catch (e: ClearCredentialException) {
         Log.e("SIGN-IN", "Error: ${e.errorMessage}")
-    }
-}
-
-@Suppress("deprecation")
-private fun getCroppedImage(
-    resolver: ContentResolver,
-    result: CropImageView.CropResult
-): Bitmap? {
-    if (!result.isSuccessful) {
-        Log.e("IMAGE", "Error: ${result.error}")
-        return null
-    }
-
-    val uri = result.uriContent ?: return null
-
-    return if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P) {
-        MediaStore.Images.Media.getBitmap(resolver, uri)
-    } else {
-        val source = ImageDecoder.createSource(resolver, uri)
-        ImageDecoder.decodeBitmap(source)
     }
 }
 
