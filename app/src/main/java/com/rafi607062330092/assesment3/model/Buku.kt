@@ -4,5 +4,6 @@ data class Buku(
     val id_buku: Long = 0L,
     val judul: String,
     val penulis: String,
-    val penerbit: String
+    val penerbit: String,
+    val mine: String
 )
