@@ -18,6 +18,7 @@ import retrofit2.http.GET
 import retrofit2.http.Header
 import retrofit2.http.Multipart
 import retrofit2.http.POST
+import retrofit2.http.PUT
 import retrofit2.http.Part
 import retrofit2.http.Path
 
@@ -56,6 +57,18 @@ interface BukuApiService {
         @Part("penulis") penulis: RequestBody,
         @Part("penerbit") penerbit: RequestBody,
         @Part image: MultipartBody.Part
+    ): OpStatus
+
+    @Multipart
+    @POST("buku/{id_buku}")
+    suspend fun updateBuku(
+        @Header("Authorization") token: String,
+        @Part("_method") method: RequestBody,
+        @Path("id_buku") id_buku: Long,
+        @Part("judul") judul: RequestBody,
+        @Part("penulis") penulis: RequestBody,
+        @Part("penerbit") penerbit: RequestBody,
+        @Part image: MultipartBody.Part? = null
     ): OpStatus
 
     @DELETE("buku/{id_buku}")
