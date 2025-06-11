@@ -61,8 +61,8 @@ object BukuApi {
         retrofit.create(BukuApiService::class.java)
     }
 
-    fun getBukuUrl(imageId: String): String {
-        return "${BASE_URL}image.php?id=$imageId"
+    fun getImageUrl(id: Long): String {
+        return "${BASE_URL}buku/image/$id"
     }
 }
 
