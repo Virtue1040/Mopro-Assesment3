@@ -23,7 +23,7 @@ import retrofit2.http.Part
 import retrofit2.http.Path
 
 
-private const val BASE_URL = "https://rattler-intent-cricket.ngrok-free.app/api/"
+private const val BASE_URL = "https://buku-api.michael-kaiser.my.id/api/"
 
 private val logging = HttpLoggingInterceptor().apply {
     level = HttpLoggingInterceptor.Level.BODY
