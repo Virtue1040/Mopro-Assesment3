@@ -1,6 +1,5 @@
 package com.rafi607062330092.assesment3.network
 
-import com.rafi607062330092.assesment3.model.Buku
 import com.rafi607062330092.assesment3.model.BukuStatus
 import com.rafi607062330092.assesment3.model.OpStatus
 import com.squareup.moshi.Moshi
@@ -18,7 +17,6 @@ import retrofit2.http.GET
 import retrofit2.http.Header
 import retrofit2.http.Multipart
 import retrofit2.http.POST
-import retrofit2.http.PUT
 import retrofit2.http.Part
 import retrofit2.http.Path
 

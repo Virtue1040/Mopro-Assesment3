@@ -5,7 +5,6 @@ import android.util.Log
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.rafi607062330092.assesment3.model.Buku
 import com.rafi607062330092.assesment3.model.BukuStatus
 import com.rafi607062330092.assesment3.network.ApiStatus
 import com.rafi607062330092.assesment3.network.BukuApi
