@@ -310,6 +310,12 @@ fun ListItem(buku: Buku, onHapus: (id : Long) -> Unit, onClick: () -> Unit = {})
                     fontSize = 14.sp,
                     color = Color.White
                 )
+                Text(
+                    text = buku.penerbit,
+                    fontStyle = FontStyle.Italic,
+                    fontSize = 14.sp,
+                    color = Color.White
+                )
             }
             if (buku.mine == "1") {
                 IconButton(
