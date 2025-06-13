@@ -90,7 +90,7 @@ object BukuApi {
     }
 
     fun getImageUrl(id: Long): String {
-        return "${BASE_URL}buku/image/$id"
+        return "${BASE_URL}buku/image/$id?timestamp=${System.currentTimeMillis()}"
     }
 }
 
